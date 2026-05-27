@@ -1,0 +1,103 @@
+-- Food Marketplace — schéma MySQL (DS Web GLSI2)
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+DROP TABLE IF EXISTS commande_items;
+DROP TABLE IF EXISTS commandes;
+DROP TABLE IF EXISTS plats;
+DROP TABLE IF EXISTS restaurants;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS avis;
+
+CREATE TABLE users (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nom VARCHAR(150) NOT NULL,
+  email VARCHAR(150) NOT NULL UNIQUE,
+  telephone VARCHAR(20) NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  role ENUM('admin','client') NOT NULL DEFAULT 'client',
+  adresse TEXT NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE restaurants (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nom VARCHAR(150) NOT NULL,
+  description TEXT NULL,
+  image VARCHAR(255) NULL,
+  adresse TEXT NOT NULL,
+  horaires VARCHAR(100) NULL,
+  type_cuisine VARCHAR(100) NOT NULL,
+  note_moyenne DECIMAL(3,2) NOT NULL DEFAULT 0.00,
+  temps_livraison_estime INT NOT NULL COMMENT 'en minutes',
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE plats (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  restaurant_id BIGINT UNSIGNED NOT NULL,
+  nom VARCHAR(150) NOT NULL,
+  description TEXT NULL,
+  prix DECIMAL(10,3) NOT NULL,
+  image VARCHAR(255) NULL,
+  categorie VARCHAR(100) NOT NULL,
+  is_available BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_plats_restaurant FOREIGN KEY (restaurant_id)
+    REFERENCES restaurants(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE commandes (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NOT NULL,
+  restaurant_id BIGINT UNSIGNED NOT NULL,
+  date DATETIME NOT NULL,
+  total DECIMAL(10,3) NOT NULL,
+  statut_livraison ENUM(
+    'en_attente','confirmee','en_preparation','en_livraison','livree','annulee'
+  ) NOT NULL DEFAULT 'en_attente',
+  adresse_livraison TEXT NOT NULL,
+  telephone_contact VARCHAR(20) NOT NULL DEFAULT '',
+  commentaire TEXT NULL,
+  mode_paiement ENUM('carte','livraison','mobile_money') NOT NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_commandes_user FOREIGN KEY (user_id)
+    REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_commandes_restaurant FOREIGN KEY (restaurant_id)
+    REFERENCES restaurants(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE commande_items (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  commande_id BIGINT UNSIGNED NOT NULL,
+  plat_id BIGINT UNSIGNED NOT NULL,
+  quantite INT NOT NULL,
+  prix_unitaire DECIMAL(10,3) NOT NULL,
+  sous_total DECIMAL(10,3) NOT NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_commande_items_commande FOREIGN KEY (commande_id)
+    REFERENCES commandes(id) ON DELETE CASCADE,
+  CONSTRAINT fk_commande_items_plat FOREIGN KEY (plat_id)
+    REFERENCES plats(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE avis (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NOT NULL,
+  restaurant_id BIGINT UNSIGNED NOT NULL,
+  note INT NOT NULL CHECK (note >= 1 AND note <= 5),
+  commentaire TEXT NULL,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_avis_user FOREIGN KEY (user_id)
+    REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_avis_restaurant FOREIGN KEY (restaurant_id)
+    REFERENCES restaurants(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_user_restaurant (user_id, restaurant_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
