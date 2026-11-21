@@ -8,7 +8,7 @@ Full-stack application for restaurant discovery and food ordering. It uses React
 
 ## Project status
 
-This repository now includes local Docker Compose, backend and frontend unit tests, browser E2E tests, GitHub Actions CI, Docker Hub image publishing, and a single-server HTTPS deployment template. A November 2026 product iteration added a dark interface, order tracking, and more complete account forms. **The public-server deployment is not performed yet.**
+This repository now includes local Docker Compose, backend and frontend unit tests, browser E2E tests, GitHub Actions CI with security scanning and SBOM generation, Docker Hub image publishing, and a single-server HTTPS deployment template. A November 2026 product iteration added a dark interface, order tracking, and more complete account forms. **The public-server deployment is not performed yet.**
 
 ## Evolution milestones
 
@@ -28,6 +28,7 @@ The stages below follow the named commits on `main`. They are commit-history mil
 | **8. Customer experience and API improvements** | [`f8f68a3`](https://github.com/yahmadi45/-Food-Marketplace/commit/f8f68a3dee458630a45340ea219005492d76db53) | Refreshed the customer-facing pages and responsive layout, added lazy-loaded routes and a not-found page, tightened API input handling, and expanded seed-safety tests and setup documentation. |
 | **9. Milestone documentation** | [`eddd2a1`](https://github.com/yahmadi45/-Food-Marketplace/commit/eddd2a1673fa49109d1eb1e18b658bfc44114c8e) | Recorded the main development milestones in the README so the project history and current deployment status were easier to understand. |
 | **10. Testing and deployment preparation** | [`0030166`](https://github.com/yahmadi45/-Food-Marketplace/commit/003016650b3a600e6b8562e1928b72749961b861) | Added frontend component tests and Playwright browser tests, included them in CI, organized database inspection tooling, and added a single-server production Compose/Caddy template and release guidance. This prepares deployment but does not mean a public server has been deployed. |
+| **11. Supply-chain security and SBOM** | [`1fd4c0c`](https://github.com/yahmadi45/-Food-Marketplace/commit/1fd4c0c73ae1cbb7b914c33bb9a960dcc56d7ad6) | Added parallel Gitleaks secret scanning, Trivy dependency and container-image scans, SPDX SBOM generation, and a gate requiring these jobs to pass before Docker Hub publishing. Updated the vulnerable Axios dependency tree, npm in the backend runtime image, and Alpine packages in the frontend runtime image. The post-merge workflow passed and published both images. |
 
 ## Features
 
@@ -156,7 +157,7 @@ Database inspection utilities are grouped under `backend/scripts/db/`:
 
 ## CI/CD and Docker Hub
 
-`.github/workflows/ci.yml` runs on pushes to `main` and pull requests. It executes backend tests, frontend unit tests/build, Playwright E2E, starts Compose for integration smoke checks, then cleans up. After successful checks on a push to `main`, it publishes backend and frontend images to Docker Hub.
+`.github/workflows/ci.yml` runs on pushes to `main` and pull requests. It executes backend tests, frontend unit tests/build, Playwright E2E, starts Compose for integration smoke checks, then cleans up. Three independent jobs also run in parallel: Gitleaks scans for secrets; Trivy scans dependency lockfiles and both container images, failing on fixable HIGH or CRITICAL findings; and the SBOM job generates SPDX JSON artifacts for the backend and frontend images. Docker Hub publishing waits for the tests and all three jobs to pass. Buildx also attaches SBOM attestations to the published images.
 
 Required repository Actions configuration:
 
