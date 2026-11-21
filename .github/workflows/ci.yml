@@ -85,8 +85,96 @@ jobs:
         if: always()
         run: docker compose down --volumes --remove-orphans
 
+  gitleaks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Scan repository for secrets
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          # Add GITLEAKS_LICENSE from repository secrets if this moves to an organization.
+
+  trivy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Build images for scanning
+        run: |
+          docker build -t food-marketplace-backend:ci -f backend/Dockerfile backend
+          docker build -t food-marketplace-frontend:ci -f frontend/Dockerfile frontend
+
+      - name: Scan dependencies
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Scan backend image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: food-marketplace-backend:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Scan frontend image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: food-marketplace-frontend:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+  sbom:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Build images for SBOM generation
+        run: |
+          docker build -t food-marketplace-backend:ci -f backend/Dockerfile backend
+          docker build -t food-marketplace-frontend:ci -f frontend/Dockerfile frontend
+
+      - name: Generate backend SBOM
+        uses: anchore/sbom-action@v0.24.3
+        with:
+          image: food-marketplace-backend:ci
+          format: spdx-json
+          output-file: backend-sbom.spdx.json
+          artifact-name: backend-sbom
+
+      - name: Generate frontend SBOM
+        uses: anchore/sbom-action@v0.24.3
+        with:
+          image: food-marketplace-frontend:ci
+          format: spdx-json
+          output-file: frontend-sbom.spdx.json
+          artifact-name: frontend-sbom
+
   publish-to-docker-hub:
-    needs: test-and-build
+    needs: [test-and-build, gitleaks, trivy, sbom]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.publishdockerhub == 'true' && vars.dockerhubuser != ''
     runs-on: ubuntu-latest
     permissions:
@@ -113,6 +201,7 @@ jobs:
           tags: |
             ${{ vars.dockerhubuser }}/food-marketplace-backend:latest
             ${{ vars.dockerhubuser }}/food-marketplace-backend:${{ github.sha }}
+          sbom: true
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
 
@@ -125,5 +214,6 @@ jobs:
           tags: |
             ${{ vars.dockerhubuser }}/food-marketplace-frontend:latest
             ${{ vars.dockerhubuser }}/food-marketplace-frontend:${{ github.sha }}
+          sbom: true
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
