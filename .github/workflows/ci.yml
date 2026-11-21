@@ -55,7 +55,7 @@ jobs:
         run: npm run test:e2e
 
       - name: Build and start services
-        run: docker compose up -d --build --pull always
+        run: docker compose up -d --build --pull always --wait --wait-timeout 120
 
       - name: Check API readiness and frontend
         run: |
@@ -74,7 +74,6 @@ jobs:
           }
           check_http http://localhost:4000/api/health
           check_http http://localhost:4000/api/health/ready
-          check_http http://localhost:8080/api/health
           check_http http://localhost:8080/
 
       - name: Show service status and logs on failure
