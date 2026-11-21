@@ -8,7 +8,7 @@ Full-stack application for restaurant discovery and food ordering. It uses React
 
 ## Project status
 
-This repository now includes local Docker Compose, backend and frontend unit tests, browser E2E tests, GitHub Actions CI with security scanning and SBOM generation, Docker Hub image publishing, and a single-server HTTPS deployment template. A November 2026 product iteration added a dark interface, order tracking, and more complete account forms. **The public-server deployment is not performed yet.**
+This repository now includes local Docker Compose, backend and frontend unit tests, browser E2E tests, GitHub Actions CI with security scanning and SBOM generation, Docker Hub image publishing, and a single-server HTTPS deployment template. The local DevSecOps stack adds metrics, centralized logs, tested database backup/restore jobs, and runtime hardening. A November 2026 product iteration added a dark interface, order tracking, and more complete account forms. **The public-server deployment is not performed yet.**
 
 ## Evolution milestones
 
@@ -29,6 +29,8 @@ The stages below follow the named commits on `main`. They are commit-history mil
 | **9. Milestone documentation** | [`eddd2a1`](https://github.com/yahmadi45/-Food-Marketplace/commit/eddd2a1673fa49109d1eb1e18b658bfc44114c8e) | Recorded the main development milestones in the README so the project history and current deployment status were easier to understand. |
 | **10. Testing and deployment preparation** | [`0030166`](https://github.com/yahmadi45/-Food-Marketplace/commit/003016650b3a600e6b8562e1928b72749961b861) | Added frontend component tests and Playwright browser tests, included them in CI, organized database inspection tooling, and added a single-server production Compose/Caddy template and release guidance. This prepares deployment but does not mean a public server has been deployed. |
 | **11. Supply-chain security and SBOM** | [`1fd4c0c`](https://github.com/yahmadi45/-Food-Marketplace/commit/1fd4c0c73ae1cbb7b914c33bb9a960dcc56d7ad6) | Added parallel Gitleaks secret scanning, Trivy dependency and container-image scans, SPDX SBOM generation, and a gate requiring these jobs to pass before Docker Hub publishing. Updated the vulnerable Axios dependency tree, npm in the backend runtime image, and Alpine packages in the frontend runtime image. The post-merge workflow passed and published both images. |
+| **12. Local DevSecOps operations** | [`54626bf`](https://github.com/yahmadi45/-Food-Marketplace/commit/54626bfbee6b8fa88712ba21dd1b669b24f1f17f) | Added Prometheus API metrics, Grafana dashboards, Alloy/Loki centralized logging, compressed and verified MySQL backup/restore jobs, and hardened the single-server Compose services. Local checks covered metrics scraping, log ingestion, HTTPS routing, and restore refusal/success. Backups remain on-host unless copied elsewhere; no public server was deployed. |
+| **13. Reliable Compose CI and image publishing** | [`4aad5b3`](https://github.com/yahmadi45/-Food-Marketplace/commit/4aad5b38ffe9cc98a468cc82c1e929c64d994a5f) | Added Loki and Alloy to the local/CI Compose stack so Nginx can resolve its syslog collector before startup. GitHub Actions run [#21](https://github.com/yahmadi45/-Food-Marketplace/actions/runs/44943012464) passed backend/frontend tests, Playwright, Gitleaks, Trivy, SBOM generation, and Docker Hub publishing. |
 
 ## Features
 
@@ -51,9 +53,11 @@ The latest frontend changes were checked with the component test suite, Playwrig
 
 ```text
 Browser -> React/Vite -> Nginx (:8080) -> Express API (:4000) -> MySQL 8.4
+Nginx/backend logs -> Alloy -> Loki -> Grafana
+Backend metrics -> Prometheus -> Grafana
 ```
 
-Nginx serves built frontend assets and forwards `/api/*` to Express. Compose provides a private service network and persistent MySQL volume.
+Nginx serves built frontend assets and forwards `/api/*` to Express. Compose provides a private service network and persistent MySQL volume. The local stack sends frontend syslog access logs to Alloy/Loki; the production-style stack also forwards backend logs and scrapes API metrics.
 
 ## Run locally with Docker
 
@@ -171,6 +175,8 @@ Images are tagged `latest` and with the commit SHA:
 - `<dockerhub-user>/food-marketplace-frontend:<tag>`
 
 Pushing images to Docker Hub is not the same as deploying a public website; a server still needs to run the application.
+
+The latest verified main workflow, [run #21](https://github.com/yahmadi45/-Food-Marketplace/actions/runs/44943012464), passed all jobs, including Docker Hub publishing of both application images.
 
 ## Production-style Compose stack
 
