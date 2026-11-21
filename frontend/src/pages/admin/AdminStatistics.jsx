@@ -18,7 +18,7 @@ export default function AdminStatistics() {
       <div className="card" style={{ padding: '1rem', marginBottom: '1.25rem' }}>
         <h3 style={{ marginTop: 0 }}>Répartition CA par restaurant</h3>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-          <thead style={{ background: '#1e2835' }}>
+          <thead>
             <tr>
               <th style={{ padding: '0.55rem', textAlign: 'left' }}>Restaurant</th>
               <th style={{ padding: '0.55rem', textAlign: 'right' }}>CA cumulé (TND)</th>
@@ -26,7 +26,7 @@ export default function AdminStatistics() {
           </thead>
           <tbody>
             {(d.ventes_par_restaurant || []).map((r) => (
-              <tr key={r.nom} style={{ borderTop: '1px solid #2a3544' }}>
+              <tr key={r.nom}>
                 <td style={{ padding: '0.55rem' }}>{r.nom}</td>
                 <td style={{ padding: '0.55rem', textAlign: 'right' }}>{Number(r.ca).toFixed(3)}</td>
               </tr>

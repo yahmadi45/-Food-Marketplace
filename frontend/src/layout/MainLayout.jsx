@@ -17,31 +17,39 @@ export default function MainLayout() {
         <header className="site-header">
           <div className="container site-header-inner">
             <Link to="/" className="brand" aria-label="Food Marketplace, accueil">
-              <span className="brand-mark" aria-hidden="true">✳</span>
-              <span>Food Marketplace</span>
+              <span className="brand-mark" aria-hidden="true">F</span>
+              <span className="brand-copy">
+                <strong>Food Marketplace</strong>
+                <small>Les bonnes tables, près de chez vous</small>
+              </span>
             </Link>
             <nav className="site-nav" aria-label="Navigation principale">
               <Link className="nav-link" to="/">Découvrir</Link>
+              {user && <Link className="nav-link" to="/commandes">Mes commandes</Link>}
               {user?.role === 'admin' && <Link className="nav-link" to="/admin/dashboard">Administration</Link>}
-              {!user ? (
-                <>
-                  <Link to="/connexion"><button type="button" className="btn btn-ghost">Connexion</button></Link>
-                  <Link to="/inscription"><button type="button" className="btn btn-primary">Créer un compte</button></Link>
-                </>
-              ) : (
-                <>
-                  <span className="nav-user" title={user.nom}>{user.nom}</span>
-                  <button type="button" className="btn btn-ghost" onClick={logout}>Déconnexion</button>
-                </>
-              )}
-              <button type="button" className="btn btn-primary" onClick={() => setOpen(true)} aria-label={`Ouvrir le panier, ${cart.count} articles`}>
-                Panier <span aria-hidden="true">·</span> {cart.count}
+              <div className="site-actions">
+                {!user ? (
+                  <>
+                    <Link to="/connexion" className="btn btn-ghost">Connexion</Link>
+                    <Link to="/inscription" className="btn btn-primary">Créer un compte</Link>
+                  </>
+                ) : (
+                  <>
+                    <span className="nav-user" title={user.nom}>Bonjour, {user.nom}</span>
+                    <button type="button" className="btn btn-ghost" onClick={logout}>Déconnexion</button>
+                  </>
+                )}
+              </div>
+              <button type="button" className="btn btn-cart" onClick={() => setOpen(true)} aria-label={`Ouvrir le panier, ${cart.count} articles`}>
+                <span aria-hidden="true">🛒</span>
+                <span>Panier</span>
+                <span className="cart-count" aria-hidden="true">{cart.count}</span>
               </button>
             </nav>
           </div>
         </header>
       )}
-      <main style={{ paddingBottom: '2rem', minHeight: '70vh' }}><Outlet /></main>
+      <main className="site-main"><Outlet /></main>
       <CartDrawer open={open} onClose={() => setOpen(false)} />
     </>
   );

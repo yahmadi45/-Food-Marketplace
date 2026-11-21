@@ -147,7 +147,7 @@ export default function AdminPlats() {
 
       <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-          <thead style={{ background: '#1e2835' }}>
+          <thead>
             <tr>
               <th style={{ padding: '0.6rem', textAlign: 'left' }}>Plat</th>
               <th style={{ padding: '0.6rem', textAlign: 'left' }}>Restaurant</th>
@@ -159,7 +159,7 @@ export default function AdminPlats() {
           </thead>
           <tbody>
             {rows.map((p) => (
-              <tr key={p.id} style={{ borderTop: '1px solid #2a3544' }}>
+              <tr key={p.id}>
                 <td style={{ padding: '0.6rem' }}>{p.nom}</td>
                 <td style={{ padding: '0.6rem' }}>{p.restaurant_nom}</td>
                 <td style={{ padding: '0.6rem' }}>{categorieLibelle(p.categorie)}</td>

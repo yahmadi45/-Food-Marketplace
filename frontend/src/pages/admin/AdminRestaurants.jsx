@@ -119,7 +119,7 @@ export default function AdminRestaurants() {
 
       <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-          <thead style={{ background: '#1e2835' }}>
+          <thead>
             <tr>
               <th style={{ padding: '0.6rem', textAlign: 'left' }}>Nom</th>
               <th style={{ padding: '0.6rem' }}>Cuisine</th>
@@ -131,7 +131,7 @@ export default function AdminRestaurants() {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} style={{ borderTop: '1px solid #2a3544' }}>
+              <tr key={r.id}>
                 <td style={{ padding: '0.6rem' }}>{r.nom}</td>
                 <td style={{ padding: '0.6rem' }}>{r.type_cuisine}</td>
                 <td style={{ padding: '0.6rem' }}>{Number(r.note_moyenne).toFixed(1)}</td>

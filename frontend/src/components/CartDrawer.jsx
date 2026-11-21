@@ -10,73 +10,71 @@ export default function CartDrawer({ open, onClose }) {
 
   return (
     <>
-      <div
-        role="presentation"
+      <button
+        type="button"
+        className="cart-drawer-backdrop"
         onClick={onClose}
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.5)',
-          zIndex: 100,
-        }}
+        aria-label="Fermer le panier"
       />
       <aside
-        className="card"
-        style={{
-          position: 'fixed',
-          top: 0,
-          right: 0,
-          height: '100vh',
-          width: 'min(420px, 100%)',
-          zIndex: 101,
-          margin: 0,
-          borderRadius: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          animation: 'slide 0.2s ease',
-        }}
+        className="cart-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cart-title"
       >
-        <style>{`@keyframes slide { from { transform: translateX(100%); } to { transform: none; } }`}</style>
-        <div className="row" style={{ justifyContent: 'space-between', padding: '1rem 1.25rem', borderBottom: '1px solid #334155' }}>
-          <h2 style={{ margin: 0, fontSize: '1.1rem' }}>Panier</h2>
-          <button type="button" className="btn btn-ghost" onClick={onClose}>
-            ✕
+        <div className="cart-drawer-header">
+          <div>
+            <p className="eyebrow">Votre sélection</p>
+            <h2 id="cart-title">Mon panier <span>({cart.count})</span></h2>
+          </div>
+          <button type="button" className="icon-button" onClick={onClose} aria-label="Fermer">
+            ×
           </button>
         </div>
-        <div style={{ flex: 1, overflow: 'auto', padding: '1rem' }}>
+
+        <div className="cart-drawer-content">
           {cart.items.length === 0 ? (
-            <p className="muted">Votre panier est vide.</p>
+            <div className="cart-empty">
+              <span className="cart-empty-icon" aria-hidden="true">🛍️</span>
+              <h3>Votre panier est vide</h3>
+              <p>Les plats que vous ajoutez apparaîtront ici.</p>
+              <button type="button" className="btn btn-ghost" onClick={onClose}>
+                Découvrir les restaurants
+              </button>
+            </div>
           ) : (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {cart.items.map((x) => (
-                <li
-                  key={x.plat_id}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '56px 1fr auto',
-                    gap: '0.75rem',
-                    alignItems: 'center',
-                    padding: '0.75rem 0',
-                    borderBottom: '1px solid #2a3544',
-                  }}
-                >
-                  {x.image ? (
-                    <img alt="" src={x.image} style={{ width: 56, height: 56, borderRadius: 8, objectFit: 'cover' }} />
+            <ul className="cart-items">
+              {cart.items.map((item) => (
+                <li key={item.plat_id} className="cart-item">
+                  {item.image ? (
+                    <img alt="" src={item.image} className="cart-item-image" />
                   ) : (
-                    <div style={{ width: 56, height: 56, borderRadius: 8, background: '#334155' }} />
+                    <div className="cart-item-image cart-item-placeholder" aria-hidden="true">🍽️</div>
                   )}
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{x.nom}</div>
-                    <div className="muted">{x.prix.toFixed(3)} TND × {x.quantite}</div>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-end' }}>
-                    <div className="row" style={{ gap: '0.25rem' }}>
-                      <button type="button" className="btn btn-ghost" style={{ padding: '0.25rem 0.55rem' }} onClick={() => cart.dec(x.plat_id)}>−</button>
-                      <span>{x.quantite}</span>
-                      <button type="button" className="btn btn-ghost" style={{ padding: '0.25rem 0.55rem' }} onClick={() => cart.inc(x.plat_id)}>+</button>
-                    </div>
-                    <button type="button" className="btn btn-danger" style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem' }} onClick={() => cart.removeItem(x.plat_id)}>
+                  <div className="cart-item-info">
+                    <strong>{item.nom}</strong>
+                    <span>{item.prix.toFixed(3)} TND / unité</span>
+                    <button type="button" className="text-button" onClick={() => cart.removeItem(item.plat_id)}>
                       Retirer
+                    </button>
+                  </div>
+                  <div className="cart-quantity">
+                    <button
+                      type="button"
+                      className="quantity-button"
+                      onClick={() => cart.dec(item.plat_id)}
+                      aria-label={`Diminuer la quantité de ${item.nom}`}
+                    >
+                      −
+                    </button>
+                    <span aria-live="polite">{item.quantite}</span>
+                    <button
+                      type="button"
+                      className="quantity-button"
+                      onClick={() => cart.inc(item.plat_id)}
+                      aria-label={`Augmenter la quantité de ${item.nom}`}
+                    >
+                      +
                     </button>
                   </div>
                 </li>
@@ -84,35 +82,37 @@ export default function CartDrawer({ open, onClose }) {
             </ul>
           )}
         </div>
-        <div style={{ padding: '1rem 1.25rem', borderTop: '1px solid #334155' }}>
-          <div className="row" style={{ justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-            <span>Sous-total</span>
-            <span>{cart.subtotal.toFixed(3)} TND</span>
+
+        {cart.items.length > 0 && (
+          <div className="cart-drawer-footer">
+            <div className="cart-total-row">
+              <span>Sous-total</span>
+              <strong>{cart.subtotal.toFixed(3)} TND</strong>
+            </div>
+            <div className="cart-total-row cart-fee-row">
+              <span>Livraison estimée</span>
+              <span>{cart.fraisLivraison.toFixed(3)} TND</span>
+            </div>
+            <div className="cart-total-row cart-grand-total">
+              <span>Total estimé</span>
+              <strong>{cart.total.toFixed(3)} TND</strong>
+            </div>
+            {user ? (
+              <Link to="/checkout" onClick={onClose} className="btn btn-primary cart-checkout">
+                Continuer vers la livraison
+                <span aria-hidden="true">→</span>
+              </Link>
+            ) : (
+              <Link to="/connexion" onClick={onClose} className="btn btn-primary cart-checkout">
+                Connectez-vous pour commander
+                <span aria-hidden="true">→</span>
+              </Link>
+            )}
+            <button type="button" className="btn btn-ghost cart-continue" onClick={onClose}>
+              Continuer mes achats
+            </button>
           </div>
-          <div className="muted" style={{ fontSize: '0.85rem', marginBottom: '0.75rem' }}>
-            Frais de livraison estimés&nbsp;: {cart.fraisLivraison.toFixed(3)} TND
-          </div>
-          <div className="row" style={{ justifyContent: 'space-between', fontWeight: 700, marginBottom: '1rem' }}>
-            <span>Total</span>
-            <span>{cart.total.toFixed(3)} TND</span>
-          </div>
-          <button type="button" className="btn btn-ghost" style={{ width: '100%', marginBottom: '0.5rem' }} onClick={onClose}>
-            Continuer les achats
-          </button>
-          {user ? (
-            <Link to="/checkout" onClick={onClose} style={{ display: 'block' }}>
-              <button type="button" className="btn btn-primary" style={{ width: '100%' }} disabled={!cart.items.length}>
-                Valider la commande
-              </button>
-            </Link>
-          ) : (
-            <Link to="/connexion" onClick={onClose} style={{ display: 'block' }}>
-              <button type="button" className="btn btn-primary" style={{ width: '100%' }}>
-                Connexion pour commander
-              </button>
-            </Link>
-          )}
-        </div>
+        )}
       </aside>
     </>
   );

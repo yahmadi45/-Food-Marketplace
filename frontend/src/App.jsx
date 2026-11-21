@@ -7,6 +7,7 @@ import AdminLayout from './layout/AdminLayout.jsx';
 const HomePage = lazy(() => import('./pages/HomePage.jsx'));
 const RestaurantPage = lazy(() => import('./pages/RestaurantPage.jsx'));
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage.jsx'));
+const MyOrdersPage = lazy(() => import('./pages/MyOrdersPage.jsx'));
 const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage.jsx'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard.jsx'));
@@ -36,6 +37,7 @@ export default function App() {
         <Route element={<MainLayout />}>
           <Route index element={<HomePage />} />
           <Route path="restaurant/:id" element={<RestaurantPage />} />
+          <Route path="commandes" element={<AccessGuard><MyOrdersPage /></AccessGuard>} />
           <Route path="connexion" element={<LoginPage />} />
           <Route path="inscription" element={<RegisterPage />} />
           <Route path="checkout" element={<AccessGuard><CheckoutPage /></AccessGuard>} />

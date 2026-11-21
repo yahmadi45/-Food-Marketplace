@@ -8,7 +8,7 @@ Full-stack application for restaurant discovery and food ordering. It uses React
 
 ## Project status
 
-This repository now includes local Docker Compose, backend and frontend unit tests, browser E2E tests, GitHub Actions CI, Docker Hub image publishing, and a single-server HTTPS deployment template. **The public-server deployment is not performed yet.**
+This repository now includes local Docker Compose, backend and frontend unit tests, browser E2E tests, GitHub Actions CI, Docker Hub image publishing, and a single-server HTTPS deployment template. A November 2026 product iteration added a dark interface, order tracking, and more complete account forms. **The public-server deployment is not performed yet.**
 
 ## Evolution milestones
 
@@ -33,8 +33,18 @@ The stages below follow the named commits on `main`. They are commit-history mil
 
 - Restaurant search and cuisine, rating, and delivery-time filters.
 - Restaurant menus grouped by category, customer reviews, and cart.
-- JWT customer registration/login, checkout, order history, and admin pages.
+- Responsive dark theme across the customer and admin interfaces.
+- JWT customer registration/login with password visibility, confirmation, and strength guidance.
+- Checkout with payment on delivery; online card and mobile-money payments are not enabled.
+- Customer order history with delivery-status progress.
+- Admin pages for managing restaurants, dishes, users, and orders.
 - Demo data seeding without dropping existing tables.
+
+## Current account and payment limitations
+
+Registration requires a password of at least eight characters, matching the backend rule. The strength indicator is guidance rather than an extra password policy. Email-based password reset is not configured. Checkout currently records payment on delivery; card and mobile-money options are displayed as unavailable until a payment provider is integrated. The app does not collect card details or charge customers online.
+
+The latest frontend changes were checked with the component test suite, Playwright smoke tests, a production build, and a Docker Compose frontend image build. These checks do not mean the production deployment template or a public server has been deployed.
 
 ## Architecture
 
@@ -175,7 +185,7 @@ Only the Compose configuration syntax was validated locally. No VPS, domain, DNS
 
 ## Git branches and release tags
 
-There is one current branch, `main`; milestone names above are descriptions of commits, not existing tags. After the current work is merged/pushed and CI passes, create a tag on the verified commit and publish it through GitHub **Releases**:
+The milestone names above are descriptions of commits, not existing tags. `main` is the project’s default branch. After changes reach `main` and CI passes, create a tag on the verified commit and publish it through GitHub **Releases**:
 
 ```powershell
 git pull origin main
@@ -192,7 +202,7 @@ backend/scripts/       Schema, demo seed, DB user setup, database inspection
 backend/src/           Express app, routes, middleware, database pool
 backend/test/          API and seed safety tests
 frontend/src/          React pages, components, contexts, and styles
-frontend/src/pages/HomePage.test.jsx  Vitest component tests
+frontend/src/pages/*.test.jsx         Vitest component tests
 frontend/e2e/          Playwright browser tests
 frontend/Dockerfile     Vite build and unprivileged Nginx image
 backend/Dockerfile      Multi-stage API image

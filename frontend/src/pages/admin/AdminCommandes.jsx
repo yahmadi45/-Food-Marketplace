@@ -80,7 +80,7 @@ export default function AdminCommandes() {
 
       <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
-          <thead style={{ background: '#1e2835' }}>
+          <thead>
             <tr>
               <th style={{ padding: '0.55rem', textAlign: 'left' }}>#</th>
               <th style={{ padding: '0.55rem', textAlign: 'left' }}>Client</th>
@@ -93,7 +93,7 @@ export default function AdminCommandes() {
           </thead>
           <tbody>
             {rows.map((c) => (
-              <tr key={c.id} style={{ borderTop: '1px solid #2a3544' }}>
+              <tr key={c.id}>
                 <td style={{ padding: '0.55rem' }}>{c.id}</td>
                 <td style={{ padding: '0.55rem' }}>{c.client_nom}</td>
                 <td style={{ padding: '0.55rem' }}>{c.restaurant_nom}</td>
@@ -121,13 +121,13 @@ export default function AdminCommandes() {
 
       {detail && (
         <div role="dialog" style={{ marginTop: '1.25rem' }} className="card">
-          <div style={{ padding: '1rem', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="order-detail-header">
             <strong>Commande #{detail.commande.id}</strong>
             <button type="button" className="btn btn-ghost" onClick={() => setDetail(null)}>
               ✕
             </button>
           </div>
-          <div style={{ padding: '1rem' }}>
+          <div className="order-detail-content">
             <p className="muted">
               Client : {detail.commande.client_nom} ({detail.commande.client_email}) — {detail.commande.client_telephone}
             </p>

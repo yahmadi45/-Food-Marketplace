@@ -11,35 +11,24 @@ const links = [
 
 export default function AdminLayout() {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', minHeight: '100vh' }}>
-      <aside
-        className="card"
-        style={{ borderRadius: 0, padding: '1rem', borderRight: '1px solid #334155', background: '#151c24' }}
-      >
-        <div style={{ fontWeight: 700, marginBottom: '1rem', fontFamily: "'Fraunces',serif" }}>Back-office</div>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          {links.map((l) => (
-            <NavLink
-              key={l.to}
-              to={`/admin/${l.to}`}
-              style={({ isActive }) => ({
-                padding: '0.5rem 0.65rem',
-                borderRadius: 8,
-                textDecoration: 'none',
-                color: 'inherit',
-                background: isActive ? '#2a3544' : 'transparent',
-                fontWeight: isActive ? 600 : 400,
-              })}
-            >
-              {l.label}
+    <div className="admin-shell">
+      <aside className="admin-sidebar">
+        <NavLink to="/admin/dashboard" className="admin-brand">
+          <span className="brand-mark" aria-hidden="true">F</span>
+          <span>Food Marketplace</span>
+        </NavLink>
+        <nav className="admin-nav" aria-label="Navigation administration">
+          {links.map((link) => (
+            <NavLink key={link.to} to={`/admin/${link.to}`}>
+              {link.label}
             </NavLink>
           ))}
         </nav>
-        <NavLink to="/" style={{ display: 'block', marginTop: '2rem' }} className="muted">
-          ← Front-office
+        <NavLink to="/" className="admin-back-link">
+          ← Retour à la boutique
         </NavLink>
       </aside>
-      <main style={{ padding: '1.25rem 1.5rem 2rem', overflow: 'auto', background: 'var(--bg)' }}>
+      <main className="admin-content">
         <Outlet />
       </main>
     </div>

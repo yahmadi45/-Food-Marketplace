@@ -5,9 +5,24 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useCart } from '../context/CartContext.jsx';
 
 const PAY = [
-  { id: 'carte', label: 'Carte bancaire' },
-  { id: 'livraison', label: 'Paiement à la livraison' },
-  { id: 'mobile_money', label: 'Mobile money / wallet' },
+  {
+    id: 'livraison',
+    label: 'Paiement à la livraison',
+    description: 'Réglez votre commande à sa réception.',
+    available: true,
+  },
+  {
+    id: 'carte',
+    label: 'Carte bancaire',
+    description: 'Le paiement par carte en ligne arrive bientôt.',
+    available: false,
+  },
+  {
+    id: 'mobile_money',
+    label: 'Mobile money',
+    description: 'Le paiement mobile arrive bientôt.',
+    available: false,
+  },
 ];
 
 export default function CheckoutPage() {
@@ -17,7 +32,7 @@ export default function CheckoutPage() {
   const [adresse_livraison, setAddr] = useState('');
   const [telephone_contact, setTel] = useState('');
   const [commentaire, setComment] = useState('');
-  const [mode_paiement, setPay] = useState('carte');
+  const [mode_paiement, setPay] = useState('livraison');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null);
   const [err, setErr] = useState('');
@@ -62,16 +77,15 @@ export default function CheckoutPage() {
 
   if (done) {
     return (
-      <div className="container" style={{ maxWidth: 560, paddingTop: '2rem' }}>
-        <div className="card" style={{ padding: '1.75rem' }}>
-          <h1 style={{ marginTop: 0 }}>Commande confirmée</h1>
+      <div className="auth-page">
+        <div className="card checkout-success">
+          <span className="checkout-success-icon" aria-hidden="true">✓</span>
+          <span className="eyebrow">C’est confirmé</span>
+          <h1 style={{ margin: '.5rem 0' }}>Commande enregistrée</h1>
           <p>Merci ! Votre commande #{done.commande.id} est enregistrée (statut : en attente).</p>
-          <p className="muted">Total payé&nbsp;: {Number(done.commande.total).toFixed(3)} TND</p>
-          <Link to="/">
-            <button type="button" className="btn btn-primary">
-              Retour à l’accueil
-            </button>
-          </Link>
+          <p className="muted">Mode de paiement : {PAY.find((method) => method.id === mode_paiement)?.label}.</p>
+          <p className="muted">Total de la commande&nbsp;: {Number(done.commande.total).toFixed(3)} TND</p>
+          <Link to="/" className="btn btn-primary">Retour à l’accueil</Link>
         </div>
       </div>
     );
@@ -79,56 +93,60 @@ export default function CheckoutPage() {
 
   if (!cart.items.length) {
     return (
-      <div className="container" style={{ padding: '3rem', textAlign: 'center' }}>
-        <p>Panier vide.</p>
-        <Link to="/">Continuer vos achats</Link>
+      <div className="container empty-state" style={{ minHeight: '55vh' }}>
+        <span className="cart-empty-icon" aria-hidden="true">🛍️</span>
+        <h1>Votre panier est vide</h1>
+        <p>Parcourez les restaurants pour trouver votre prochain repas.</p>
+        <Link to="/" className="btn btn-primary">Découvrir les restaurants</Link>
       </div>
     );
   }
 
   return (
-    <div
-      className="container checkout-grid"
-      style={{
-        paddingTop: '2rem',
-        display: 'grid',
-        gap: '1.5rem',
-        gridTemplateColumns: 'minmax(0,1fr) minmax(260px, 360px)',
-        alignItems: 'start',
-      }}
-    >
-      <style>{`
-        @media (max-width: 900px) {
-          .checkout-grid { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
-
-      <div className="card" style={{ padding: '1.5rem' }}>
-        <h2 style={{ marginTop: 0 }}>Informations de livraison</h2>
-        {err && <p style={{ color: 'var(--danger)' }}>{err}</p>}
-        <form onSubmit={confirm} style={{ display: 'grid', gap: '1rem' }}>
+    <div className="container checkout-grid">
+      <section className="card checkout-card">
+        <span className="eyebrow">Presque arrivé</span>
+        <h1>Informations de livraison</h1>
+        {err && <p className="checkout-error" role="alert">{err}</p>}
+        <form onSubmit={confirm} className="checkout-form">
           <label>
             <span className="muted">Adresse de livraison</span>
-            <textarea required rows={3} style={{ width: '100%', marginTop: '0.35rem' }} value={adresse_livraison} onChange={(e) => setAddr(e.target.value)} />
+            <textarea autoComplete="street-address" required rows={3} value={adresse_livraison} onChange={(e) => setAddr(e.target.value)} />
           </label>
           <label>
             <span className="muted">Numéro de téléphone</span>
-            <input required style={{ width: '100%', marginTop: '0.35rem' }} value={telephone_contact} onChange={(e) => setTel(e.target.value)} />
+            <input type="tel" autoComplete="tel" required value={telephone_contact} onChange={(e) => setTel(e.target.value)} />
           </label>
           <label>
             <span className="muted">Commentaire (optionnel)</span>
-            <textarea rows={2} style={{ width: '100%', marginTop: '0.35rem' }} value={commentaire} onChange={(e) => setComment(e.target.value)} />
+            <textarea rows={2} value={commentaire} onChange={(e) => setComment(e.target.value)} />
           </label>
 
-          <h3 style={{ marginBottom: '0.25rem' }}>Paiement</h3>
-          <div style={{ display: 'grid', gap: '0.5rem' }}>
-            {PAY.map((p) => (
-              <label key={p.id} className="row" style={{ cursor: 'pointer' }}>
-                <input type="radio" name="pay" checked={mode_paiement === p.id} onChange={() => setPay(p.id)} />
-                {p.label}
-              </label>
-            ))}
-          </div>
+          <fieldset className="payment-method-fieldset">
+            <legend>Mode de paiement</legend>
+            <div className="payment-options">
+              {PAY.map((p) => (
+                <label key={p.id} className={`payment-option ${p.available ? '' : 'is-unavailable'}`}>
+                  <input
+                    type="radio"
+                    name="pay"
+                    value={p.id}
+                    checked={mode_paiement === p.id}
+                    disabled={!p.available}
+                    onChange={() => setPay(p.id)}
+                  />
+                  <span className="payment-option-copy">
+                    <span className="payment-option-title">{p.label}</span>
+                    <span className="payment-option-description">{p.description}</span>
+                  </span>
+                  <span className="payment-option-state">{p.available ? 'Disponible' : 'Bientôt'}</span>
+                </label>
+              ))}
+            </div>
+            <p className="payment-note" role="note">
+              Les paiements en ligne ne sont pas encore activés. Aucun montant ne sera débité par carte ou Mobile money.
+            </p>
+          </fieldset>
 
           <button type="submit" className="btn btn-primary" disabled={busy}>
             {busy ? 'Envoi…' : 'Confirmer la commande'}
@@ -137,13 +155,14 @@ export default function CheckoutPage() {
             Retour au panier
           </button>
         </form>
-      </div>
+      </section>
 
-      <aside className="card" style={{ padding: '1.25rem' }}>
-        <h3 style={{ marginTop: 0 }}>Récapitulatif</h3>
-        <ul style={{ listStyle: 'none', padding: 0 }}>
+      <aside className="card checkout-summary">
+        <span className="eyebrow">Votre commande</span>
+        <h2>Récapitulatif</h2>
+        <ul className="checkout-items">
           {cart.items.map((x) => (
-            <li key={x.plat_id} style={{ marginBottom: '0.35rem', display: 'flex', justifyContent: 'space-between', gap: '0.75rem' }}>
+            <li key={x.plat_id} className="checkout-item">
               <span>
                 {x.nom} × {x.quantite}
               </span>
@@ -151,18 +170,15 @@ export default function CheckoutPage() {
             </li>
           ))}
         </ul>
-        <hr style={{ border: 'none', borderTop: '1px solid #334155' }} />
-        <div className="row" style={{ justifyContent: 'space-between' }}>
-          <span>Sous-total</span>
-          <span>{cart.subtotal.toFixed(3)} TND</span>
+        <hr className="checkout-divider" />
+        <div className="cart-total-row">
+          <span>Sous-total</span><strong>{cart.subtotal.toFixed(3)} TND</strong>
         </div>
-        <div className="row" style={{ justifyContent: 'space-between' }}>
-          <span>Frais de livraison</span>
-          <span>{cart.fraisLivraison.toFixed(3)} TND</span>
+        <div className="cart-total-row cart-fee-row">
+          <span>Frais de livraison</span><span>{cart.fraisLivraison.toFixed(3)} TND</span>
         </div>
-        <div className="row" style={{ justifyContent: 'space-between', fontWeight: 700, marginTop: '0.5rem' }}>
-          <span>Total</span>
-          <span>{cart.total.toFixed(3)} TND</span>
+        <div className="cart-total-row cart-grand-total">
+          <span>Total estimé</span><strong>{cart.total.toFixed(3)} TND</strong>
         </div>
       </aside>
     </div>

@@ -20,10 +20,10 @@ export default function AdminUsers() {
     <div>
       <h1 style={{ marginTop: 0 }}>Clients & utilisateurs</h1>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr minmax(300px, 400px)', gap: '1.25rem' }}>
+      <div className="admin-users-grid">
         <div className="card" style={{ padding: 0, overflowX: 'auto', maxHeight: '70vh' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-            <thead style={{ background: '#1e2835', position: 'sticky', top: 0 }}>
+            <thead>
               <tr>
                 <th style={{ padding: '0.6rem', textAlign: 'left' }}>Nom</th>
                 <th style={{ padding: '0.6rem', textAlign: 'left' }}>Email</th>
@@ -34,7 +34,7 @@ export default function AdminUsers() {
             </thead>
             <tbody>
               {users.map((u) => (
-                <tr key={u.id} style={{ borderTop: '1px solid #2a3544' }}>
+                <tr key={u.id}>
                   <td style={{ padding: '0.6rem' }}>{u.nom}</td>
                   <td style={{ padding: '0.6rem' }}>{u.email}</td>
                   <td style={{ padding: '0.6rem' }}>{u.telephone}</td>
