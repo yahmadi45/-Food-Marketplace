@@ -10,6 +10,7 @@ COPY --from=dependencies --chown=node:node /app/node_modules ./node_modules
 COPY --chown=node:node package.json ./package.json
 COPY --chown=node:node src ./src
 COPY --chown=node:node scripts/init-app-user.js ./scripts/init-app-user.js
+COPY --chown=node:node scripts/seed-demo.js ./scripts/seed-demo.js
 USER node
 EXPOSE 4000
 CMD ["node", "src/index.js"]
