@@ -21,7 +21,7 @@ jobs:
       JWT_SECRET: ci_only_secret_for_automated_tests_1234567890
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Run backend tests
         working-directory: backend
@@ -34,16 +34,23 @@ jobs:
 
       - name: Check API readiness and frontend
         run: |
-          for attempt in $(seq 1 30); do
-            if curl --fail --silent http://localhost:4000/api/health/ready >/dev/null; then
-              break
-            fi
-            sleep 2
-          done
-          curl --fail --silent --show-error http://localhost:4000/api/health
-          curl --fail --silent --show-error http://localhost:4000/api/health/ready
-          curl --fail --silent --show-error http://localhost:8080/api/health
-          curl --fail --silent --show-error http://localhost:8080/ >/dev/null
+          check_http() {
+            url="$1"
+            attempts=30
+            while [ "$attempts" -gt 0 ]; do
+              if curl --connect-timeout 3 --max-time 10 --fail --silent --show-error "$url"; then
+                return 0
+              fi
+              attempts=$((attempts - 1))
+              sleep 2
+            done
+            echo "HTTP check failed after retries: $url" >&2
+            return 1
+          }
+          check_http http://localhost:4000/api/health
+          check_http http://localhost:4000/api/health/ready
+          check_http http://localhost:8080/api/health
+          check_http http://localhost:8080/
 
       - name: Show service status and logs on failure
         if: failure()
@@ -61,7 +68,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
