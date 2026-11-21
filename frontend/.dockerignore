@@ -4,3 +4,10 @@ dist
 .env
 .env.*
 npm-debug.log*
+e2e/
+playwright-report/
+test-results/
+vitest.config.js
+playwright.config.js
+src/test/
+**/*.test.*

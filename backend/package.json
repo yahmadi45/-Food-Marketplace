@@ -7,7 +7,8 @@
     "dev": "node --watch src/index.js",
     "test": "node --test",
     "db:setup": "node scripts/setupDb.js",
-    "db:seed": "node scripts/seed-demo.js"
+    "db:seed": "node scripts/seed-demo.js",
+    "db:inspect": "node scripts/db/inspect-db.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

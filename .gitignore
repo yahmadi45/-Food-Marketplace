@@ -1,6 +1,9 @@
 # Node dependencies and generated files
 node_modules/
+**/node_modules/
 frontend/dist/
+frontend/playwright-report/
+frontend/test-results/
 
 # Secrets and local environment
 .env

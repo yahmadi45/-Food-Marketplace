@@ -1,83 +1,70 @@
 # Food Marketplace
 
-Application web full-stack de commande de repas : découvrez des restaurants, consultez leurs menus, composez un panier et passez commande. Le projet utilise React, Express, MySQL, Docker Compose et GitHub Actions.
+Full-stack application for restaurant discovery and food ordering. It uses React, Express, MySQL, Docker Compose, and GitHub Actions.
 
-**Interface :** français · **Devise :** dinar tunisien (TND) · **Données :** restaurants de démonstration à Tunis et alentours.
+- **Interface:** French
+- **Currency:** Tunisian dinar (TND)
+- **Demo catalog:** Restaurants around Tunis
 
-## Évolution du projet — jalons de version
+## Project status
 
-Les intitulés ci-dessous sont des **jalons de développement basés sur les commits Git**, pas des branches Git ni des releases numérotées. Les comparer permet de montrer l’évolution réelle du code, étape par étape.
+This repository now includes local Docker Compose, backend and frontend unit tests, browser E2E tests, GitHub Actions CI, Docker Hub image publishing, and a single-server HTTPS deployment template. **The public-server deployment is not performed yet.**
 
-| Jalon | Commit | Évolution |
+## Evolution milestones
+
+These milestones identify commits in the `main` branch; they are not Git tags unless marked as such.
+
+| Milestone | Commit | Main change |
 | --- | --- | --- |
-| **1. Socle marketplace** | [`7fc857a`](https://github.com/yahmadi45/-Food-Marketplace/commit/7fc857aed72d362d0f8b7e7518a1b451459b616d) | Application initiale React/Vite, API Express, MySQL, catalogue, comptes, panier, commandes et administration. |
-| **2. Lancement reproductible** | [`c8ad710`](https://github.com/yahmadi45/-Food-Marketplace/commit/c8ad710b99a0a10fb959174117836b276c27c978) | Dockerfiles frontend/backend, Nginx pour servir React et relayer `/api`, Compose avec MySQL persistante, premiers smoke checks GitHub Actions. |
-| **3. Exécution et tests renforcés** | [`acb8d46`](https://github.com/yahmadi45/-Food-Marketplace/commit/acb8d46716515885c47e679774e33466e82dd94a) | Images multi-stage, exécution avec moins de privilèges, compte MySQL applicatif limité, endpoints liveness/readiness et tests API. |
-| **4. CI fiable et images publiées** | [`313f20a`](https://github.com/yahmadi45/-Food-Marketplace/commit/313f20a6c36c4185a90371f1eb4c83dcb6f02728) | Réessais des contrôles HTTP pour absorber les démarrages lents; CI vérifie l’application avant publication. Le workflow #4 a terminé avec succès. |
-| **5. Démonstration avec données sûres** | [`45b07b6`](https://github.com/yahmadi45/-Food-Marketplace/commit/45b07b67f117c11d58578511120f57ad990124ea) | Ajout d’un seed idempotent pour restaurants, plats et avis, sans recréer ni vider la base. |
-| **6. Présentation et qualité finale** | [`f8f68a3`](https://github.com/yahmadi45/-Food-Marketplace/commit/f8f68a3dee458630a45340ea219005492d76db53) | Refonte visuelle de l’accueil et des fiches restaurant, lazy-loading des pages, corrections validation/API/panier, README complet et protection du seed de démonstration. |
+| **1. Marketplace foundation** | [`7fc857a`](https://github.com/yahmadi45/-Food-Marketplace/commit/7fc857aed72d362d0f8b7e7518a1b451459b616d) | Existing React/Vite UI, Express REST API, MySQL schema, customer flows, orders, admin area. |
+| **2. Reproducible local stack** | [`c8ad710`](https://github.com/yahmadi45/-Food-Marketplace/commit/c8ad710b99a0a10fb959174117836b276c27c978) | Frontend/backend Dockerfiles, Nginx proxy, Compose stack, first GitHub Actions smoke workflow. |
+| **3. Runtime hardening** | [`acb8d46`](https://github.com/yahmadi45/-Food-Marketplace/commit/acb8d46716515885c47e679774e33466e82dd94a) | Non-root/minimal runtime settings, least-privilege MySQL app account, liveness/readiness checks, API tests. |
+| **4. Reliable CI and image publishing** | [`313f20a`](https://github.com/yahmadi45/-Food-Marketplace/commit/313f20a6c36c4185a90371f1eb4c83dcb6f02728) | Retried HTTP smoke checks and updated checkout action; workflow run passed and image publishing completed. |
+| **5. Repeatable demo data** | [`45b07b6`](https://github.com/yahmadi45/-Food-Marketplace/commit/45b07b67f117c11d58578511120f57ad990124ea) | Added a non-destructive demo seeder for restaurants, dishes, and reviews. |
+| **6. Product polish** | [`f8f68a3`](https://github.com/yahmadi45/-Food-Marketplace/commit/f8f68a3dee458630a45340ea219005492d76db53) | Redesigned customer pages, lazy-loaded routes, hardened API validation, improved docs and seed safety. |
+| **7. Testing and deployment preparation** | Current working changes | Vitest component tests, Playwright E2E, database utility cleanup, production Compose/Caddy template, release guidance. These changes are not pushed yet. |
 
-### Résumé de l’état final
+## Features
 
-Le dépôt conserve **une seule branche, `main`** : les jalons sont retrouvables dans l’historique des commits et comparables dans GitHub, mais ne sont pas des branches ou tags de release. Le code applicatif reste en React, Node.js/Express et MySQL; Docker le conditionne et Compose le fait tourner ensemble. GitHub Actions teste l’API, construit et vérifie les services, puis publie les images frontend/backend sur Docker Hub. La version locale a été vérifiée avec **huit tests backend réussis**, un build frontend réussi, trois services Compose sains, une API qui renvoie les trois restaurants demo et le site HTTP 200 sur `http://localhost:8080`.
-
-Le pipeline publie des **images**, pas une application hébergée publiquement : aucun serveur public n’est configuré dans ce dépôt.
-
-## Fonctionnalités
-
-- Catalogue de restaurants avec recherche et filtres par cuisine, note et délai de livraison.
-- Fiches restaurants, menus classés par catégorie et avis clients.
-- Inscription, authentification JWT, panier et validation des commandes.
-- Espace d’administration pour gérer les restaurants, plats, commandes, utilisateurs et statistiques.
-- Images Docker multi-stage, services Compose avec healthchecks et stockage MySQL persistant.
-- Pipeline GitHub Actions pour tester, construire, vérifier et publier les images sur Docker Hub.
+- Restaurant search and cuisine, rating, and delivery-time filters.
+- Restaurant menus grouped by category, customer reviews, and cart.
+- JWT customer registration/login, checkout, order history, and admin pages.
+- Demo data seeding without dropping existing tables.
 
 ## Architecture
 
 ```text
-Navigateur
-└── React + Vite, servi par Nginx non-root (:8080)
-    └── /api/* → reverse proxy Nginx
-        └── Express / Node.js (:4000)
-            └── MySQL 8.4 (réseau interne Compose)
+Browser -> React/Vite -> Nginx (:8080) -> Express API (:4000) -> MySQL 8.4
 ```
 
-| Partie | Technologies | Rôle |
-| --- | --- | --- |
-| Frontend | React, Vite, React Router | Parcours client et administration |
-| Serveur web | Nginx non-root | Fichiers statiques et proxy `/api` |
-| API | Node.js, Express, JWT | Authentification, catalogue, commandes, administration |
-| Données | MySQL 8.4, `mysql2/promise` | Comptes, restaurants, plats, commandes, avis |
-| DevOps | Docker, Compose, GitHub Actions | Images, orchestration locale, tests et publication |
+Nginx serves built frontend assets and forwards `/api/*` to Express. Compose provides a private service network and persistent MySQL volume.
 
-## Démarrage avec Docker
+## Run locally with Docker
 
-Prérequis : Docker Desktop ou Docker Engine avec le plugin Compose. Depuis la racine du dépôt :
+Requirements: Docker Desktop or Docker Engine with Compose.
 
 ```powershell
 docker compose up --pull always -d
 ```
 
-- Site : <http://localhost:8080>
-- API liveness : <http://localhost:4000/api/health>
-- API readiness et connexion MySQL : <http://localhost:4000/api/health/ready>
+- Web application: <http://localhost:8080>
+- API liveness: <http://localhost:4000/api/health>
+- API/database readiness: <http://localhost:4000/api/health/ready>
 
-Compose démarre MySQL, attend son healthcheck, initialise un compte applicatif MySQL aux droits limités, puis lance l’API et le frontend. Le volume `mysql_data` conserve les données à travers l’arrêt et la recréation des conteneurs.
-
-Arrêter les conteneurs sans supprimer la base :
+The database is stored in the `mysql_data` volume. Stop services without deleting it:
 
 ```powershell
 docker compose down
 ```
 
-Éviter `docker compose down --volumes` si les données locales doivent être conservées.
+Avoid `docker compose down --volumes` when you want to keep local MySQL data.
 
-## Données de démonstration
+## Seed demo data
 
-Après le premier démarrage, insérer les restaurants, plats, avis et le compte client de démonstration. La commande est idempotente et n’efface pas les données :
+The seed is repeatable and does not recreate the schema. It requires a unique local demo password of at least 12 characters and refuses to run when `NODE_ENV=production`:
 
 ```powershell
-$env:DEMO_USER_PASSWORD = Read-Host "Mot de passe local du compte demo (12 caracteres minimum)"
+$env:DEMO_USER_PASSWORD = Read-Host "Demo account password (12 characters minimum)"
 docker compose run --rm --no-deps `
   -e DB_HOST=database `
   -e DB_PORT=3306 `
@@ -89,13 +76,13 @@ docker compose run --rm --no-deps `
 Remove-Item Env:DEMO_USER_PASSWORD
 ```
 
-Le compte client utilise l’adresse `client@demo.local` et le mot de passe que vous fournissez à la commande ci-dessus. Choisissez un mot de passe de démonstration unique ; ne le réutilisez pas en production.
+The demo account email is `client@demo.local`; its password is the value entered above. Never use demo credentials in production.
 
-## Développement sans Docker
+## Run without Docker
 
-Démarrer d’abord un serveur MySQL, créer la base `food_marketplace` et exécuter `backend/scripts/schema.sql`. Copier `backend/.env.example` vers `backend/.env`, puis configurer la connexion et `JWT_SECRET`.
+Start MySQL, create `food_marketplace`, and apply `backend/scripts/schema.sql`. Copy `backend/.env.example` to `backend/.env` and configure the database connection and `JWT_SECRET`.
 
-Terminal 1, API :
+Backend terminal:
 
 ```powershell
 cd backend
@@ -103,7 +90,7 @@ npm ci
 npm run dev
 ```
 
-Terminal 2, frontend :
+Frontend terminal:
 
 ```powershell
 cd frontend
@@ -111,11 +98,13 @@ npm ci
 npm run dev
 ```
 
-Ouvrir <http://localhost:5173>. Vite redirige `/api` vers `http://localhost:4000`. Une fois la base initialisée, le seed local se lance avec `npm run db:seed` depuis `backend/`.
+Open <http://localhost:5173>. Vite proxies `/api` to `http://localhost:4000`. Once MySQL is initialized, seed demo data from `backend/` with `DEMO_USER_PASSWORD` set.
 
-## Tests et build
+Read-only database inspection is available as `npm run db:inspect` from `backend/` when its `.env` points to a reachable MySQL instance.
 
-Tests backend avec le runner natif Node.js :
+## Tests and build
+
+Backend API and seed-safety tests:
 
 ```powershell
 cd backend
@@ -123,55 +112,94 @@ npm ci
 npm test
 ```
 
-Build de production du frontend :
+Frontend component tests and production bundle:
 
 ```powershell
 cd frontend
 npm ci
+npm test
 npm run build
 ```
 
-Routes de diagnostic : `GET /api/health` vérifie que le serveur API répond ; `GET /api/health/ready` vérifie également l’accès à la base.
+Playwright browser tests:
 
-## GitHub Actions et Docker Hub
-
-Le workflow `.github/workflows/ci.yml` s’exécute sur les pushes vers `main` et les pull requests. Il lance les tests backend, construit et démarre l’environnement Compose, vérifie l’API et le frontend, puis supprime son environnement temporaire de CI.
-
-Après succès des tests, un push sur `main` publie les images si les valeurs Actions du dépôt sont définies :
-
-- Variable `dockerhubuser` : nom d’utilisateur Docker Hub.
-- Variable `publishdockerhub` : valeur `true`.
-- Secret `DOCKERHUB_TOKEN` : token Docker Hub Read & Write. Ne jamais le committer.
-
-Tags produits :
-
-- `<dockerhub-user>/food-marketplace-backend:latest`
-- `<dockerhub-user>/food-marketplace-backend:<commit-sha>`
-- `<dockerhub-user>/food-marketplace-frontend:latest`
-- `<dockerhub-user>/food-marketplace-frontend:<commit-sha>`
-
-Publier les images ne rend pas le site public. Il faut encore un serveur ou une plateforme d’hébergement pour exécuter l’application.
-
-## Structure du dépôt
-
-```text
-backend/
-  scripts/       Schéma MySQL, seed non destructif et initialisation du compte applicatif
-  src/           Application Express, routes, middleware, connexion DB
-  test/          Tests API avec node:test
-  Dockerfile     Image API multi-stage
-frontend/
-  src/           Pages, composants, contexte et styles React
-  Dockerfile     Build Vite et runtime Nginx non-root
-  nginx.conf     Site statique, headers et proxy API
-docker-compose.yml
-.github/workflows/ci.yml
+```powershell
+npx playwright install chromium
+npm run test:e2e
 ```
 
-## Sécurité et maintenance
+E2E tests start Vite and mock API responses; they cover the homepage, restaurant cards, search, and clearing empty results. GitHub Actions installs Chromium and runs these checks before the image-publish job.
 
-- `.env.example` contient des valeurs réservées au développement local ; les remplacer par des secrets robustes hors local.
-- Ne jamais committer `.env`, mots de passe, tokens ou secrets de production.
-- Le backend se connecte à MySQL avec un utilisateur applicatif limité ; root sert uniquement à initialiser ce compte.
-- `backend/scripts/setupDb.js` supprime et recrée la base. Ne pas exécuter `npm run db:setup` sur des données à conserver ; utiliser `npm run db:seed` pour ajouter les données de démonstration.
-- Avant d’exposer l’application sur Internet, modifier les secrets, revoir le compte de démonstration et les données, limiter l’accès réseau et configurer HTTPS.
+## Database scripts
+
+Database inspection utilities are grouped under `backend/scripts/db/`:
+
+- `npm run db:inspect` prints table and record summaries using `backend/.env`.
+- `show-db.js`, `view-db.js`, and `show-data.js` are retained as older manual inspection utilities.
+
+`npm run db:setup` is destructive: `setupDb.js` drops and recreates the configured database. Use it only for disposable local data; prefer `npm run db:seed` to add demo rows.
+
+## CI/CD and Docker Hub
+
+`.github/workflows/ci.yml` runs on pushes to `main` and pull requests. It executes backend tests, frontend unit tests/build, Playwright E2E, starts Compose for integration smoke checks, then cleans up. After successful checks on a push to `main`, it publishes backend and frontend images to Docker Hub.
+
+Required repository Actions configuration:
+
+- Variable `dockerhubuser`: Docker Hub account username.
+- Variable `publishdockerhub`: `true`.
+- Secret `DOCKERHUB_TOKEN`: Docker Hub read/write token. Never commit or share it.
+
+Images are tagged `latest` and with the commit SHA:
+
+- `<dockerhub-user>/food-marketplace-backend:<tag>`
+- `<dockerhub-user>/food-marketplace-frontend:<tag>`
+
+Pushing images to Docker Hub is not the same as deploying a public website; a server still needs to run the application.
+
+## Production Compose template
+
+`docker-compose.prod.yml`, `Caddyfile`, and `.env.prod.example` provide an **untested single-server deployment template**. MySQL is not published publicly; Caddy routes the domain to the frontend and handles HTTPS certificates.
+
+Before using it, provision a Linux host and domain, point DNS to the host, allow inbound TCP ports 80 and 443, copy `.env.prod.example` to a private `.env.prod`, and replace every example value with unique strong secrets. Start the stack with:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod up --pull always -d
+```
+
+Only the Compose configuration syntax was validated locally. No VPS, domain, DNS, HTTPS certificate, backups, or public deployment has been set up or tested. Review secrets, demo accounts, firewall rules, and database backup/restore before production use. Compose here targets one server, not a multi-node cluster.
+
+## Git branches and release tags
+
+There is one current branch, `main`; milestone names above are descriptions of commits, not existing tags. After the current work is merged/pushed and CI passes, create a tag on the verified commit and publish it through GitHub **Releases**:
+
+```powershell
+git pull origin main
+git tag -a v2.0.0 -m "Food Marketplace v2.0.0"
+git push origin v2.0.0
+```
+
+Use the next version tag for later releases. Do not mark an earlier commit as the current release.
+
+## Repository layout
+
+```text
+backend/scripts/       Schema, demo seed, DB user setup, database inspection
+backend/src/           Express app, routes, middleware, database pool
+backend/test/          API and seed safety tests
+frontend/src/          React pages, components, contexts, and styles
+frontend/src/pages/HomePage.test.jsx  Vitest component tests
+frontend/e2e/          Playwright browser tests
+frontend/Dockerfile     Vite build and unprivileged Nginx image
+backend/Dockerfile      Multi-stage API image
+docker-compose.yml      Local development and CI stack
+docker-compose.prod.yml Single-host deployment template
+Caddyfile              HTTPS reverse proxy configuration
+.github/workflows/     CI and Docker Hub publishing
+```
+
+## Security notes
+
+- `.env.example` and `.env.prod.example` are templates; keep real environment files, passwords, and tokens out of Git.
+- The backend uses a restricted MySQL account. Root is only used to initialize that account.
+- The seeder requires a supplied demo password and blocks `NODE_ENV=production`.
+- Before public deployment, replace all secrets, disable demo credentials, review demo data, restrict network exposure, and test database backups and restores.
