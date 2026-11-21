@@ -67,7 +67,7 @@ docker compose up --pull always -d
 - API liveness: <http://localhost:4000/api/health>
 - API/database readiness: <http://localhost:4000/api/health/ready>
 
-The database is stored in the `mysql_data` volume. Stop services without deleting it:
+The local stack also forwards frontend syslog access logs through Alloy to Loki. The database and Loki data are stored in named volumes. Stop services without deleting them:
 
 ```powershell
 docker compose down

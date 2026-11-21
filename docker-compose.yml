@@ -81,6 +81,55 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  loki:
+    image: grafana/loki:3.7.10
+    command: ["-config.file=/etc/loki/loki.yml"]
+    volumes:
+      - ./monitoring/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    expose: ["3100"]
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  alloy:
+    image: grafana/alloy:v1.22.0
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/tmp/alloy
+      - /etc/alloy/config.alloy
+    user: "10001:10001"
+    volumes:
+      - ./monitoring/alloy.alloy:/etc/alloy/config.alloy:ro
+    expose: ["5514/udp", "5515/udp"]
+    depends_on:
+      loki:
+        condition: service_started
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,noexec,nosuid,uid=10001,gid=10001
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   frontend:
     image: food-marketplace-frontend:latest
     build:
@@ -89,6 +138,8 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+      alloy:
+        condition: service_started
     ports:
       - "127.0.0.1:8080:8080"
     healthcheck:
@@ -109,3 +160,4 @@ services:
 
 volumes:
   mysql_data:
+  loki_data:
