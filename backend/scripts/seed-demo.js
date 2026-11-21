@@ -5,7 +5,7 @@ const demoUser = {
   nom: 'Client Démo',
   email: 'client@demo.local',
   telephone: '0599887766',
-  password: 'password123',
+  password: process.env.DEMO_USER_PASSWORD || '',
   adresse: 'Rue de la Paix, Tunis',
 };
 
@@ -52,15 +52,24 @@ const restaurants = [
 ];
 
 async function main() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Refusing to create or reset demo data when NODE_ENV=production.');
+  }
+  if (!demoUser.password || demoUser.password.length < 12) {
+    throw new Error('Set DEMO_USER_PASSWORD to a unique password of at least 12 characters before seeding demo data.');
+  }
+
+  const passwordHash = await bcrypt.hash(demoUser.password, 10);
   const [users] = await pool.execute('SELECT id FROM users WHERE email = ?', [demoUser.email]);
   let userId = users[0]?.id;
   if (!userId) {
-    const passwordHash = await bcrypt.hash(demoUser.password, 10);
     const [result] = await pool.execute(
       'INSERT INTO users (nom, email, telephone, password, role, adresse) VALUES (?, ?, ?, ?, ?, ?)',
       [demoUser.nom, demoUser.email, demoUser.telephone, passwordHash, 'client', demoUser.adresse],
     );
     userId = result.insertId;
+  } else {
+    await pool.execute('UPDATE users SET password = ? WHERE id = ?', [passwordHash, userId]);
   }
 
   let dishCount = 0;

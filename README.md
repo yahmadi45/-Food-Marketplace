@@ -1,76 +1,158 @@
 # Food Marketplace
 
-## Slide 1: Project Overview
-This project is a full-stack food marketplace built with a React frontend and an Express / MySQL backend. It allows customers to browse restaurants, view menus, add dishes to a cart, and place orders. Administrators can manage restaurants, dishes, orders, and users.
+Application web full-stack de commande de repas : découvrez des restaurants, consultez leurs menus, composez un panier et passez commande. Le projet utilise React, Express, MySQL, Docker Compose et GitHub Actions.
 
-## Slide 2: Problem Statement
-Online food marketplaces need a simple way to connect local restaurants with customers. This app solves the problem by providing a clean customer experience and a separate admin area for managing data.
+**Interface :** français · **Devise :** dinar tunisien (TND) · **Données :** restaurants de démonstration à Tunis et alentours.
 
-## Slide 3: Solution
-The solution includes:
-- A public restaurant browsing experience.
-- User authentication and protected checkout flow.
-- Shopping cart with single-restaurant enforcement.
-- Order placement and order history.
-- Admin dashboard with analytics and CRUD management.
+## Fonctionnalités
 
-## Slide 4: Architecture
-The architecture is divided into three parts:
-- `backend/`: Express server with REST APIs and MySQL integration.
-- `frontend/`: React + Vite single-page application.
-- `show_db.js` and `view_db.js`: database utilities for inspection.
+- Catalogue de restaurants avec recherche et filtres par cuisine, note et délai de livraison.
+- Fiches restaurants, menus classés par catégorie et avis clients.
+- Inscription, authentification JWT, panier et validation des commandes.
+- Espace d’administration pour gérer les restaurants, plats, commandes, utilisateurs et statistiques.
+- Images Docker multi-stage, services Compose avec healthchecks et stockage MySQL persistant.
+- Pipeline GitHub Actions pour tester, construire, vérifier et publier les images sur Docker Hub.
 
-## Slide 5: Backend Features
-The backend provides:
-- Authentication endpoints: `/api/auth/register`, `/api/auth/login`, `/api/auth/me`
-- Restaurant catalog endpoints: `/api/restaurants`, `/api/restaurants/:id`, `/api/restaurants/:id/plats`
-- Ordering endpoints: `/api/commandes` and `/api/commandes/mine`
-- Admin endpoints under `/api/admin/*` for restaurants, dishes, orders, and statistics.
-- JWT-based auth middleware and role-based admin protection.
+## Architecture
 
-## Slide 6: Frontend Features
-The frontend includes:
-- Restaurant listing and filters.
-- Restaurant detail page with menu and reviews.
-- Cart drawer and checkout page.
-- Login / registration pages.
-- Admin pages for dashboard, restaurants, dishes, orders, users, and statistics.
+```text
+Navigateur
+└── React + Vite, servi par Nginx non-root (:8080)
+    └── /api/* → reverse proxy Nginx
+        └── Express / Node.js (:4000)
+            └── MySQL 8.4 (réseau interne Compose)
+```
 
-## Slide 7: Database
-The database uses MySQL and includes tables for:
-- `users`
-- `restaurants`
-- `plats`
-- `commandes`
-- `commande_items`
-- `avis`
+| Partie | Technologies | Rôle |
+| --- | --- | --- |
+| Frontend | React, Vite, React Router | Parcours client et administration |
+| Serveur web | Nginx non-root | Fichiers statiques et proxy `/api` |
+| API | Node.js, Express, JWT | Authentification, catalogue, commandes, administration |
+| Données | MySQL 8.4, `mysql2/promise` | Comptes, restaurants, plats, commandes, avis |
+| DevOps | Docker, Compose, GitHub Actions | Images, orchestration locale, tests et publication |
 
-The backend uses `mysql2/promise` with a connection pool.
+## Démarrage avec Docker
 
-## Slide 8: How to Run Locally
-### Backend
-1. Open `backend/`.
-2. Install dependencies: `npm install`.
-3. Configure `.env` or use defaults for `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`.
-4. Run the server:
-   - `npm run dev`
+Prérequis : Docker Desktop ou Docker Engine avec le plugin Compose. Depuis la racine du dépôt :
 
-### Frontend
-1. Open `frontend/`.
-2. Install dependencies: `npm install`.
-3. Run the app:
-   - `npm run dev`
-4. Open the browser at `http://localhost:5173`.
+```powershell
+docker compose up --pull always -d
+```
 
-## Slide 9: Notes
-- The backend listens on port `4000` by default.
-- The frontend calls the backend API through `/api/*` endpoints.
-- The cart enforces a single restaurant per order.
-- Admin functionality requires a user with `role = 'admin'.`
+- Site : <http://localhost:8080>
+- API liveness : <http://localhost:4000/api/health>
+- API readiness et connexion MySQL : <http://localhost:4000/api/health/ready>
 
-## Slide 10: Recommended Enhancements
-- Add real payment integration.
-- Add restaurant reviews creation.
-- Improve restaurant search and filtering.
-- Add order status notifications and delivery tracking.
+Compose démarre MySQL, attend son healthcheck, initialise un compte applicatif MySQL aux droits limités, puis lance l’API et le frontend. Le volume `mysql_data` conserve les données à travers l’arrêt et la recréation des conteneurs.
 
+Arrêter les conteneurs sans supprimer la base :
+
+```powershell
+docker compose down
+```
+
+Éviter `docker compose down --volumes` si les données locales doivent être conservées.
+
+## Données de démonstration
+
+Après le premier démarrage, insérer les restaurants, plats, avis et le compte client de démonstration. La commande est idempotente et n’efface pas les données :
+
+```powershell
+$env:DEMO_USER_PASSWORD = Read-Host "Mot de passe local du compte demo (12 caracteres minimum)"
+docker compose run --rm --no-deps `
+  -e DB_HOST=database `
+  -e DB_PORT=3306 `
+  -e DB_USER=marketplace_app `
+  -e DB_PASSWORD=local_app_password `
+  -e DB_NAME=food_marketplace `
+  -e DEMO_USER_PASSWORD=$env:DEMO_USER_PASSWORD `
+  backend npm run db:seed
+Remove-Item Env:DEMO_USER_PASSWORD
+```
+
+Le compte client utilise l’adresse `client@demo.local` et le mot de passe que vous fournissez à la commande ci-dessus. Choisissez un mot de passe de démonstration unique ; ne le réutilisez pas en production.
+
+## Développement sans Docker
+
+Démarrer d’abord un serveur MySQL, créer la base `food_marketplace` et exécuter `backend/scripts/schema.sql`. Copier `backend/.env.example` vers `backend/.env`, puis configurer la connexion et `JWT_SECRET`.
+
+Terminal 1, API :
+
+```powershell
+cd backend
+npm ci
+npm run dev
+```
+
+Terminal 2, frontend :
+
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
+
+Ouvrir <http://localhost:5173>. Vite redirige `/api` vers `http://localhost:4000`. Une fois la base initialisée, le seed local se lance avec `npm run db:seed` depuis `backend/`.
+
+## Tests et build
+
+Tests backend avec le runner natif Node.js :
+
+```powershell
+cd backend
+npm ci
+npm test
+```
+
+Build de production du frontend :
+
+```powershell
+cd frontend
+npm ci
+npm run build
+```
+
+Routes de diagnostic : `GET /api/health` vérifie que le serveur API répond ; `GET /api/health/ready` vérifie également l’accès à la base.
+
+## GitHub Actions et Docker Hub
+
+Le workflow `.github/workflows/ci.yml` s’exécute sur les pushes vers `main` et les pull requests. Il lance les tests backend, construit et démarre l’environnement Compose, vérifie l’API et le frontend, puis supprime son environnement temporaire de CI.
+
+Après succès des tests, un push sur `main` publie les images si les valeurs Actions du dépôt sont définies :
+
+- Variable `dockerhubuser` : nom d’utilisateur Docker Hub.
+- Variable `publishdockerhub` : valeur `true`.
+- Secret `DOCKERHUB_TOKEN` : token Docker Hub Read & Write. Ne jamais le committer.
+
+Tags produits :
+
+- `<dockerhub-user>/food-marketplace-backend:latest`
+- `<dockerhub-user>/food-marketplace-backend:<commit-sha>`
+- `<dockerhub-user>/food-marketplace-frontend:latest`
+- `<dockerhub-user>/food-marketplace-frontend:<commit-sha>`
+
+Publier les images ne rend pas le site public. Il faut encore un serveur ou une plateforme d’hébergement pour exécuter l’application.
+
+## Structure du dépôt
+
+```text
+backend/
+  scripts/       Schéma MySQL, seed non destructif et initialisation du compte applicatif
+  src/           Application Express, routes, middleware, connexion DB
+  test/          Tests API avec node:test
+  Dockerfile     Image API multi-stage
+frontend/
+  src/           Pages, composants, contexte et styles React
+  Dockerfile     Build Vite et runtime Nginx non-root
+  nginx.conf     Site statique, headers et proxy API
+docker-compose.yml
+.github/workflows/ci.yml
+```
+
+## Sécurité et maintenance
+
+- `.env.example` contient des valeurs réservées au développement local ; les remplacer par des secrets robustes hors local.
+- Ne jamais committer `.env`, mots de passe, tokens ou secrets de production.
+- Le backend se connecte à MySQL avec un utilisateur applicatif limité ; root sert uniquement à initialiser ce compte.
+- `backend/scripts/setupDb.js` supprime et recrée la base. Ne pas exécuter `npm run db:setup` sur des données à conserver ; utiliser `npm run db:seed` pour ajouter les données de démonstration.
+- Avant d’exposer l’application sur Internet, modifier les secrets, revoir le compte de démonstration et les données, limiter l’accès réseau et configurer HTTPS.

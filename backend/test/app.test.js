@@ -43,6 +43,28 @@ test('readiness returns HTTP 200 when the database responds', async () => {
   });
 });
 
+test('unmatched API paths return a JSON 404', async () => {
+  const app = createApp({ databaseQuery: async () => [] });
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/does-not-exist`);
+    assert.equal(response.status, 404);
+    assert.deepEqual(await response.json(), { message: 'Route introuvable' });
+  });
+});
+
+test('malformed JSON is rejected with HTTP 400', async () => {
+  const app = createApp({ databaseQuery: async () => [] });
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{invalid json',
+    });
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), { message: 'Corps de requête JSON invalide' });
+  });
+});
+
 test('Express does not disclose its server banner', async () => {
   const app = createApp({ databaseQuery: async () => [] });
   await withServer(app, async (baseUrl) => {
