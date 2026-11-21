@@ -4,6 +4,25 @@ Application web full-stack de commande de repas : découvrez des restaurants, co
 
 **Interface :** français · **Devise :** dinar tunisien (TND) · **Données :** restaurants de démonstration à Tunis et alentours.
 
+## Évolution du projet — jalons de version
+
+Les intitulés ci-dessous sont des **jalons de développement basés sur les commits Git**, pas des branches Git ni des releases numérotées. Les comparer permet de montrer l’évolution réelle du code, étape par étape.
+
+| Jalon | Commit | Évolution |
+| --- | --- | --- |
+| **1. Socle marketplace** | [`7fc857a`](https://github.com/yahmadi45/-Food-Marketplace/commit/7fc857aed72d362d0f8b7e7518a1b451459b616d) | Application initiale React/Vite, API Express, MySQL, catalogue, comptes, panier, commandes et administration. |
+| **2. Lancement reproductible** | [`c8ad710`](https://github.com/yahmadi45/-Food-Marketplace/commit/c8ad710b99a0a10fb959174117836b276c27c978) | Dockerfiles frontend/backend, Nginx pour servir React et relayer `/api`, Compose avec MySQL persistante, premiers smoke checks GitHub Actions. |
+| **3. Exécution et tests renforcés** | [`acb8d46`](https://github.com/yahmadi45/-Food-Marketplace/commit/acb8d46716515885c47e679774e33466e82dd94a) | Images multi-stage, exécution avec moins de privilèges, compte MySQL applicatif limité, endpoints liveness/readiness et tests API. |
+| **4. CI fiable et images publiées** | [`313f20a`](https://github.com/yahmadi45/-Food-Marketplace/commit/313f20a6c36c4185a90371f1eb4c83dcb6f02728) | Réessais des contrôles HTTP pour absorber les démarrages lents; CI vérifie l’application avant publication. Le workflow #4 a terminé avec succès. |
+| **5. Démonstration avec données sûres** | [`45b07b6`](https://github.com/yahmadi45/-Food-Marketplace/commit/45b07b67f117c11d58578511120f57ad990124ea) | Ajout d’un seed idempotent pour restaurants, plats et avis, sans recréer ni vider la base. |
+| **6. Présentation et qualité finale** | [`f8f68a3`](https://github.com/yahmadi45/-Food-Marketplace/commit/f8f68a3dee458630a45340ea219005492d76db53) | Refonte visuelle de l’accueil et des fiches restaurant, lazy-loading des pages, corrections validation/API/panier, README complet et protection du seed de démonstration. |
+
+### Résumé de l’état final
+
+Le dépôt conserve **une seule branche, `main`** : les jalons sont retrouvables dans l’historique des commits et comparables dans GitHub, mais ne sont pas des branches ou tags de release. Le code applicatif reste en React, Node.js/Express et MySQL; Docker le conditionne et Compose le fait tourner ensemble. GitHub Actions teste l’API, construit et vérifie les services, puis publie les images frontend/backend sur Docker Hub. La version locale a été vérifiée avec **huit tests backend réussis**, un build frontend réussi, trois services Compose sains, une API qui renvoie les trois restaurants demo et le site HTTP 200 sur `http://localhost:8080`.
+
+Le pipeline publie des **images**, pas une application hébergée publiquement : aucun serveur public n’est configuré dans ce dépôt.
+
 ## Fonctionnalités
 
 - Catalogue de restaurants avec recherche et filtres par cuisine, note et délai de livraison.
