@@ -12,17 +12,22 @@ This repository now includes local Docker Compose, backend and frontend unit tes
 
 ## Evolution milestones
 
-These milestones identify commits in the `main` branch; they are not Git tags unless marked as such.
+The Git history starts on **May 27, 2026** and shows the project growing from an initial code upload into a tested, containerized application. The very first commit (`b3c68b8`) only added a short project description. The next commit (`7fc857a`) is the first full application upload: the marketplace already had its React/Vite frontend, Express API, MySQL schema, customer ordering flow, and admin pages. In other words, the project did not start as an empty repository.
 
-| Milestone | Commit | Main change |
+The stages below follow the named commits on `main`. They are commit-history milestones, not Git tags. Automatic Copilot checkpoint commits are left out because they record workspace state rather than product changes.
+
+| Stage | Commit | What changed and why |
 | --- | --- | --- |
-| **1. Marketplace foundation** | [`7fc857a`](https://github.com/yahmadi45/-Food-Marketplace/commit/7fc857aed72d362d0f8b7e7518a1b451459b616d) | Existing React/Vite UI, Express REST API, MySQL schema, customer flows, orders, admin area. |
-| **2. Reproducible local stack** | [`c8ad710`](https://github.com/yahmadi45/-Food-Marketplace/commit/c8ad710b99a0a10fb959174117836b276c27c978) | Frontend/backend Dockerfiles, Nginx proxy, Compose stack, first GitHub Actions smoke workflow. |
-| **3. Runtime hardening** | [`acb8d46`](https://github.com/yahmadi45/-Food-Marketplace/commit/acb8d46716515885c47e679774e33466e82dd94a) | Non-root/minimal runtime settings, least-privilege MySQL app account, liveness/readiness checks, API tests. |
-| **4. Reliable CI and image publishing** | [`313f20a`](https://github.com/yahmadi45/-Food-Marketplace/commit/313f20a6c36c4185a90371f1eb4c83dcb6f02728) | Retried HTTP smoke checks and updated checkout action; workflow run passed and image publishing completed. |
-| **5. Repeatable demo data** | [`45b07b6`](https://github.com/yahmadi45/-Food-Marketplace/commit/45b07b67f117c11d58578511120f57ad990124ea) | Added a non-destructive demo seeder for restaurants, dishes, and reviews. |
-| **6. Product polish** | [`f8f68a3`](https://github.com/yahmadi45/-Food-Marketplace/commit/f8f68a3dee458630a45340ea219005492d76db53) | Redesigned customer pages, lazy-loaded routes, hardened API validation, improved docs and seed safety. |
-| **7. Testing and deployment preparation** | Current working changes | Vitest component tests, Playwright E2E, database utility cleanup, production Compose/Caddy template, release guidance. These changes are not pushed yet. |
+| **1. First upload: project note** | [`b3c68b8`](https://github.com/yahmadi45/-Food-Marketplace/commit/b3c68b80aa9bb35e2d102b2b0243d4dfc379aa10) | Created the repository README with the project name and a short description. |
+| **2. First working application** | [`7fc857a`](https://github.com/yahmadi45/-Food-Marketplace/commit/7fc857aed72d362d0f8b7e7518a1b451459b616d) | Added the React/Vite storefront, Express/MySQL backend, authentication, restaurant and menu browsing, cart and checkout, orders, and admin management. This is the original product baseline. |
+| **3. Docker and first CI workflow** | [`c8ad710`](https://github.com/yahmadi45/-Food-Marketplace/commit/c8ad710b99a0a10fb959174117836b276c27c978) | Added frontend and backend Dockerfiles, an Nginx reverse proxy, Docker Compose, and an initial GitHub Actions workflow so the app could be built and smoke-tested consistently. |
+| **4. CI/CD expansion** | [`60f3887`](https://github.com/yahmadi45/-Food-Marketplace/commit/60f38871b4f9a67f9f180dd5b01a8b70c269b965) | Expanded CI to run backend tests and check API/database readiness. Added an optional Docker Hub publishing job for successful pushes to `main`, controlled by repository variables and a secret. |
+| **5. Container and database hardening** | [`acb8d46`](https://github.com/yahmadi45/-Food-Marketplace/commit/acb8d46716515885c47e679774e33466e82dd94a) | Reduced container privileges, added a dedicated least-privilege MySQL application account, separated liveness from database readiness checks, and introduced API tests. |
+| **6. More reliable CI checks** | [`313f20a`](https://github.com/yahmadi45/-Food-Marketplace/commit/313f20a6c36c4185a90371f1eb4c83dcb6f02728) | Made HTTP smoke checks retry during service startup and updated the checkout action to reduce flaky pipeline runs. |
+| **7. Safe demo data** | [`45b07b6`](https://github.com/yahmadi45/-Food-Marketplace/commit/45b07b67f117c11d58578511120f57ad990124ea) | Added a repeatable seeder for demo users, restaurants, dishes, and reviews that preserves the existing database instead of recreating it. |
+| **8. Customer experience and API improvements** | [`f8f68a3`](https://github.com/yahmadi45/-Food-Marketplace/commit/f8f68a3dee458630a45340ea219005492d76db53) | Refreshed the customer-facing pages and responsive layout, added lazy-loaded routes and a not-found page, tightened API input handling, and expanded seed-safety tests and setup documentation. |
+| **9. Milestone documentation** | [`eddd2a1`](https://github.com/yahmadi45/-Food-Marketplace/commit/eddd2a1673fa49109d1eb1e18b658bfc44114c8e) | Recorded the main development milestones in the README so the project history and current deployment status were easier to understand. |
+| **10. Testing and deployment preparation** | [`0030166`](https://github.com/yahmadi45/-Food-Marketplace/commit/003016650b3a600e6b8562e1928b72749961b861) | Added frontend component tests and Playwright browser tests, included them in CI, organized database inspection tooling, and added a single-server production Compose/Caddy template and release guidance. This prepares deployment but does not mean a public server has been deployed. |
 
 ## Features
 
