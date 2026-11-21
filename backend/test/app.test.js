@@ -22,6 +22,20 @@ test('liveness endpoint returns JSON without requiring a database', async () => 
   });
 });
 
+test('metrics endpoint exposes request totals and latency without counting scrapes', async () => {
+  const app = createApp({ databaseQuery: async () => [] });
+  await withServer(app, async (baseUrl) => {
+    await fetch(`${baseUrl}/api/health`);
+    const response = await fetch(`${baseUrl}/metrics`);
+    const metrics = await response.text();
+
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get('content-type'), /text\/plain/);
+    assert.match(metrics, /food_marketplace_http_requests_total\{method="GET",status_code="200"\} [1-9]/);
+    assert.match(metrics, /food_marketplace_http_request_duration_seconds_bucket/);
+  });
+});
+
 test('readiness returns HTTP 503 when the database is unavailable', async () => {
   const app = createApp({ databaseQuery: async () => { throw new Error('database unavailable'); } });
   await withServer(app, async (baseUrl) => {

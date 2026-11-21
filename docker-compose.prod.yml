@@ -1,3 +1,9 @@
+x-logging: &rotated-logs
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   database:
     image: mysql:8.4
@@ -13,8 +19,14 @@ services:
       timeout: 5s
       retries: 20
       start_period: 30s
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid
+      - /var/run/mysqld:size=16m,noexec,nosuid
+    security_opt: [no-new-privileges:true]
     restart: unless-stopped
-    networks: [internal]
+    logging: *rotated-logs
+    networks: [database]
 
   db-init:
     image: ${DOCKERHUB_USER:?Set DOCKERHUB_USER in .env.prod}/food-marketplace-backend:${IMAGE_TAG:-latest}
@@ -30,8 +42,14 @@ services:
     depends_on:
       database:
         condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
     restart: "no"
-    networks: [internal]
+    logging: *rotated-logs
+    networks: [database]
 
   backend:
     image: ${DOCKERHUB_USER:?Set DOCKERHUB_USER in .env.prod}/food-marketplace-backend:${IMAGE_TAG:-latest}
@@ -45,11 +63,15 @@ services:
       DB_NAME: food_marketplace
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.prod}
       CORS_ORIGIN: https://${DOMAIN:?Set DOMAIN in .env.prod}
+      SYSLOG_HOST: alloy
+      SYSLOG_PORT: 5515
     depends_on:
       database:
         condition: service_healthy
       db-init:
         condition: service_completed_successfully
+      alloy:
+        condition: service_started
     expose: ["4000"]
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/api/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
@@ -63,32 +85,40 @@ services:
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     restart: unless-stopped
-    networks: [internal]
+    logging: *rotated-logs
+    networks: [database, app, observability]
 
   frontend:
     image: ${DOCKERHUB_USER:?Set DOCKERHUB_USER in .env.prod}/food-marketplace-frontend:${IMAGE_TAG:-latest}
     depends_on:
       backend:
         condition: service_healthy
+      alloy:
+        condition: service_started
     expose: ["8080"]
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1"]
       interval: 15s
       timeout: 3s
       retries: 5
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid
+      - /var/cache/nginx:size=16m,noexec,nosuid
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     restart: unless-stopped
-    networks: [internal]
+    logging: *rotated-logs
+    networks: [app, observability]
 
   caddy:
     image: caddy:2
     environment:
       DOMAIN: ${DOMAIN:?Set DOMAIN in .env.prod}
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
+      - "${HTTP_BIND_ADDRESS:-0.0.0.0}:${HTTP_PORT:-80}:80"
+      - "${HTTP_BIND_ADDRESS:-0.0.0.0}:${HTTPS_PORT:-443}:443"
+      - "${HTTP_BIND_ADDRESS:-0.0.0.0}:${HTTPS_PORT:-443}:443/udp"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -96,13 +126,197 @@ services:
     depends_on:
       frontend:
         condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
     restart: unless-stopped
-    networks: [internal]
+    logging: *rotated-logs
+    networks: [app, edge]
+
+  prometheus:
+    image: prom/prometheus:v3.16.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-15d}
+      - --web.enable-lifecycle
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,noexec,nosuid
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
+    logging: *rotated-logs
+    networks:
+      - observability
+      - monitoring_admin
+
+  grafana:
+    image: grafana/grafana:13.3.1
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env.prod}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_LOG_MODE: console
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
+    depends_on:
+      prometheus:
+        condition: service_started
+      loki:
+        condition: service_started
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,noexec,nosuid
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
+    logging: *rotated-logs
+    networks:
+      - observability
+      - monitoring_admin
+
+  loki:
+    image: grafana/loki:3.7.10
+    command: ["-config.file=/etc/loki/loki.yml"]
+    volumes:
+      - ./monitoring/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,noexec,nosuid
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
+    logging: *rotated-logs
+    networks: [observability]
+
+  alloy:
+    image: grafana/alloy:v1.22.0
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/tmp/alloy
+      - /etc/alloy/config.alloy
+    user: "10001:10001"
+    volumes:
+      - ./monitoring/alloy.alloy:/etc/alloy/config.alloy:ro
+    expose: ["5514/udp", "5515/udp"]
+    depends_on:
+      loki:
+        condition: service_started
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,noexec,nosuid,uid=10001,gid=10001
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
+    logging: *rotated-logs
+    networks: [observability]
+
+  db-backup:
+    image: mysql:8.4
+    profiles: ["maintenance"]
+    entrypoint: ["/bin/bash", "-o", "pipefail", "-ec"]
+    command:
+      - |
+        umask 077
+        mkdir -p /backups
+        stamp="$$(date -u +%Y%m%dT%H%M%SZ)"
+        file="/backups/food-marketplace-$${stamp}.sql.gz"
+        mysqldump --single-transaction --routines --triggers --events --add-drop-table \
+          --host=database --user=root "$${MYSQL_DATABASE}" | gzip > "$$file"
+        gzip -t "$$file"
+        find /backups -type f -name 'food-marketplace-*.sql.gz' \
+          -mtime +"$${BACKUP_RETENTION_DAYS}" -delete
+        echo "Created and verified $${file}"
+    environment:
+      MYSQL_DATABASE: food_marketplace
+      MYSQL_PWD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env.prod}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+    depends_on:
+      database:
+        condition: service_healthy
+    volumes:
+      - ${BACKUP_PATH:-./backups}:/backups
+    user: "1000:1000"
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: "no"
+    logging: *rotated-logs
+    networks: [database]
+
+  db-restore:
+    image: mysql:8.4
+    profiles: ["maintenance"]
+    entrypoint: ["/bin/bash", "-o", "pipefail", "-ec"]
+    command:
+      - |
+        if [ "$${RESTORE_CONFIRM:-}" != "I_UNDERSTAND_THIS_REPLACES_FOOD_MARKETPLACE" ]; then
+          echo "Refusing restore: set RESTORE_CONFIRM to the exact confirmation string." >&2
+          exit 64
+        fi
+        case "$${RESTORE_FILE:-}" in
+          food-marketplace-*.sql.gz) ;;
+          *) echo "RESTORE_FILE must be a food-marketplace backup filename." >&2; exit 64 ;;
+        esac
+        file="/backups/$${RESTORE_FILE}"
+        if [ ! -f "$$file" ]; then
+          echo "Backup not found: $${RESTORE_FILE}" >&2
+          exit 66
+        fi
+        gzip -t "$$file"
+        gzip -dc "$$file" | mysql --host=database --user=root "$${MYSQL_DATABASE}"
+        echo "Restored $${file}"
+    environment:
+      MYSQL_DATABASE: food_marketplace
+      MYSQL_PWD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env.prod}
+      RESTORE_FILE: ${RESTORE_FILE:-}
+      RESTORE_CONFIRM: ${RESTORE_CONFIRM:-}
+    depends_on:
+      database:
+        condition: service_healthy
+    volumes:
+      - ${BACKUP_PATH:-./backups}:/backups:ro
+    user: "1000:1000"
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: "no"
+    logging: *rotated-logs
+    networks: [database]
 
 volumes:
   mysql_data:
   caddy_data:
   caddy_config:
+  prometheus_data:
+  grafana_data:
+  loki_data:
 
 networks:
-  internal:
+  database:
+    internal: true
+  app:
+    internal: true
+  observability:
+    internal: true
+  monitoring_admin: {}
+  edge:

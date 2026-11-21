@@ -1,0 +1,29 @@
+loki.source.syslog "food_marketplace" {
+  listener {
+    address = "0.0.0.0:5514"
+    protocol = "udp"
+    syslog_format = "rfc3164"
+    labels = {
+      job     = "food-marketplace",
+      service = "frontend",
+    }
+  }
+
+  listener {
+    address = "0.0.0.0:5515"
+    protocol = "udp"
+    syslog_format = "rfc5424"
+    labels = {
+      job     = "food-marketplace",
+      service = "backend",
+    }
+  }
+
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

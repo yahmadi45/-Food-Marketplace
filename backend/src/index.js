@@ -2,15 +2,21 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const { default: app } = await import('./app.js');
+const [{ closeLogger, logger }, { default: app }] = await Promise.all([
+  import('./logger.js'),
+  import('./app.js'),
+]);
 const port = Number(process.env.PORT || 4000);
 const server = app.listen(port, '0.0.0.0', () => {
-  console.log(`API Food Marketplace listening on port ${port}`);
+  logger.info('server_started', { port });
 });
 
 function shutdown(signal) {
-  console.log(`${signal} received; closing HTTP server`);
-  server.close(() => process.exit(0));
+  logger.info('server_shutdown_started', { signal });
+  server.close(() => {
+    closeLogger();
+    process.exit(0);
+  });
   setTimeout(() => process.exit(1), 10_000).unref();
 }
 

@@ -172,17 +172,36 @@ Images are tagged `latest` and with the commit SHA:
 
 Pushing images to Docker Hub is not the same as deploying a public website; a server still needs to run the application.
 
-## Production Compose template
+## Production-style Compose stack
 
-`docker-compose.prod.yml`, `Caddyfile`, and `.env.prod.example` provide an **untested single-server deployment template**. MySQL is not published publicly; Caddy routes the domain to the frontend and handles HTTPS certificates.
+`docker-compose.prod.yml`, `Caddyfile`, and `.env.prod.example` define a single-server stack with the app, MySQL, Caddy HTTPS, Prometheus, Grafana, Loki, and Grafana Alloy. The database is not published; Grafana and Prometheus bind to localhost. Prometheus scrapes backend request/latency metrics, and Alloy forwards backend and Nginx syslog to Loki.
 
-Before using it, provision a Linux host and domain, point DNS to the host, allow inbound TCP ports 80 and 443, copy `.env.prod.example` to a private `.env.prod`, and replace every example value with unique strong secrets. Start the stack with:
+For a local test, copy `.env.prod.example` to `.env.prod`, set `DOCKERHUB_USER` and `IMAGE_TAG` to published image tags, replace every example secret, set `DOMAIN=localhost`, and use local-only ports, for example `HTTP_BIND_ADDRESS=127.0.0.1`, `HTTP_PORT=8080`, and `HTTPS_PORT=8443`. Then validate and start:
 
 ```bash
-docker compose -f docker-compose.prod.yml --env-file .env.prod up --pull always -d
+docker compose -f docker-compose.prod.yml --env-file .env.prod config --quiet
+docker compose -f docker-compose.prod.yml --env-file .env.prod pull
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
 ```
 
-Only the Compose configuration syntax was validated locally. No VPS, domain, DNS, HTTPS certificate, backups, or public deployment has been set up or tested. Review secrets, demo accounts, firewall rules, and database backup/restore before production use. Compose here targets one server, not a multi-node cluster.
+Open `https://localhost:8443` (Caddy issues a local certificate that may not be trusted by your host; use `curl -k` for a smoke check). Grafana is at `http://localhost:3000`, with credentials from `.env.prod`; the provisioned **Food Marketplace operations** dashboard includes request rate, p95 latency, and centralized logs. Prometheus is at `http://localhost:9090`.
+
+Backups and restores are explicit maintenance-profile jobs. A backup is compressed, integrity-checked, and pruned according to `BACKUP_RETENTION_DAYS`:
+
+```bash
+sudo install -d -o 1000 -g 1000 -m 700 ./backups
+docker compose -f docker-compose.prod.yml --env-file .env.prod --profile maintenance run --rm db-backup
+```
+
+Restore replaces database contents and requires both a backup filename and the exact confirmation string:
+
+```bash
+RESTORE_FILE=food-marketplace-YYYYMMDDTHHMMSSZ.sql.gz \
+RESTORE_CONFIRM=I_UNDERSTAND_THIS_REPLACES_FOOD_MARKETPLACE \
+docker compose -f docker-compose.prod.yml --env-file .env.prod --profile maintenance run --rm db-restore
+```
+
+The Compose stack was exercised locally: app and database health checks, HTTPS routing, metrics scraping, dashboard/data-source provisioning, log ingestion into Loki, and backup integrity plus refused/confirmed restore were verified. Container hardening includes read-only roots, restricted capabilities, `no-new-privileges`, temporary filesystems, network separation, and rotated container logs. These checks are not a public production deployment: no VPS, production DNS, external monitoring, or off-host backup destination has been provisioned. Backups remain on the configured host path unless you arrange a separate protected copy. This Compose setup targets one server, not a multi-node cluster.
 
 ## Git branches and release tags
 
@@ -216,6 +235,6 @@ Caddyfile              HTTPS reverse proxy configuration
 ## Security notes
 
 - `.env.example` and `.env.prod.example` are templates; keep real environment files, passwords, and tokens out of Git.
-- The backend uses a restricted MySQL account. Root is only used to initialize that account.
+- The backend uses a restricted MySQL account. MySQL root is limited to account initialization and maintenance backup/restore jobs.
 - The seeder requires a supplied demo password and blocks `NODE_ENV=production`.
-- Before public deployment, replace all secrets, disable demo credentials, review demo data, restrict network exposure, and test database backups and restores.
+- Before public deployment, replace all secrets, disable demo credentials, review demo data, restrict network exposure, and configure off-host backups and restore drills.
